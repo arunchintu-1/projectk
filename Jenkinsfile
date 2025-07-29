@@ -6,7 +6,7 @@ pipeline {
     ECR_REPO_NAME = 'backend'
     ECR_REGISTRY = '933768354046.dkr.ecr.us-east-1.amazonaws.com'
     IMAGE_TAG = 'latest'
-    FULL_IMAGE_NAME = "backend/ backend:latest"
+    FULL_IMAGE_NAME = "933768354046.dkr.ecr.us-east-1.amazonaws.com/backend:latest"
   }
 
   stages {
@@ -20,32 +20,28 @@ pipeline {
       steps {
         sh '''
           echo "Building Docker image..."
-          ls -l  # Optional: Show files
           docker build -t backend:latest ./fullstackapp/backend
         '''
       }
     }
 
     stage('Login to ECR') {
-  steps {
-    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                      credentialsId: 'aws-ecr-creds']]) {
-      sh '''
-        echo "Logging into AWS ECR..."
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend
-      '''
-    }
-  }
-}
-
+      steps {
+        sh '''
+          echo "Logging into AWS ECR..."
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 933768354046.dkr.ecr.us-east-1.amazonaws.com
+        '''
       }
     }
 
     stage('Tag & Push to ECR') {
       steps {
         sh '''
+          echo "Tagging image..."
+          docker tag backend:latest 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend:latest
+
           echo "Pushing image to ECR..."
-          docker push backend:latest
+          docker push 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend:latest
         '''
       }
     }
@@ -56,10 +52,10 @@ pipeline {
           echo "Deploying to EKS cluster..."
           aws eks update-kubeconfig --region us-east-1 --name projectcluster
 
-          # Replace image in deployment YAML (optional if already set)
-          sed -i "s|image:.*|image: backend:latest|" ./backend/backend-deployment.yaml
+          # Optional: Update image in deployment.yaml dynamically
+          sed -i "s|image:.*|image: backend:latest|" ./fullstackapp/backend/backend-deployment.yaml
 
-          kubectl apply -f ./backend/backend-deployment.yaml
+          kubectl apply -f ./fullstackapp/backend/backend-deployment.yaml
         '''
       }
     }
