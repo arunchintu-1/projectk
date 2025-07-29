@@ -45,7 +45,7 @@ pipeline {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
           sh '''
             echo "Deploying to EKS cluster..."
-            aws eks update-kubeconfig --region $AWS_REGION --name projectcluster
+            aws eks update-kubeconfig --region $AWS_REGION --name kubernetes
 
             echo "Updating Kubernetes deployment with new image..."
             sed -i "s|image:.*|image: $FULL_IMAGE_NAME|" ./fullstackapp/backend/backend-deployment.yaml
