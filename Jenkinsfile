@@ -27,13 +27,16 @@ pipeline {
     }
 
     stage('Login to ECR') {
-      steps {
-        sh '''
-           echo "Logging into AWS ECR..."
-           aws configure set aws_access_key_id $AWS_CREDENTIALS_USR
-           aws configure set aws_secret_access_key $AWS_CREDENTIALS_PSW
-           aws configure set region us-east-1
-           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend       '''
+  steps {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                      credentialsId: 'aws-ecr-creds']]) {
+      sh '''
+        echo "Logging into AWS ECR..."
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend
+      '''
+    }
+  }
+}
 
       }
     }
