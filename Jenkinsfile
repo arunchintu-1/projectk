@@ -6,7 +6,7 @@ pipeline {
     ECR_REPO_NAME = 'backend'
     ECR_REGISTRY = '933768354046.dkr.ecr.us-east-1.amazonaws.com'
     IMAGE_TAG = 'latest'
-    FULL_IMAGE_NAME = "backend/$backend:latest"
+    FULL_IMAGE_NAME = "backend/ backend:latest"
   }
 
   stages {
@@ -21,7 +21,7 @@ pipeline {
         sh '''
           echo "Building Docker image..."
           ls -l  # Optional: Show files
-          docker build -t backend:latest .
+          docker build -t backend:latest ./fullstackapp/backend
         '''
       }
     }
