@@ -4,27 +4,32 @@ pipeline {
   environment {
     AWS_REGION = 'us-east-1'
     ECR_REPO_NAME = 'backend'
-    ECR_REGISTRY = "933768354046.dkr.ecr.us-east-1.amazonaws.com/backend" 
-    IMAGE_TAG = "${backend}:latest"
-    FULL_IMAGE_NAME = "${backend}/${latest}"
+    ECR_REGISTRY = '933768354046.dkr.ecr.us-east-1.amazonaws.com'
+    IMAGE_TAG = 'latest'
+    FULL_IMAGE_NAME = "backend/$backend:latest"
   }
 
   stages {
     stage('Clone Repo') {
-     steps {
-       git branch: 'main', url: 'https://github.com/arunchintu-1/projectk.git'
-     }
-  }
+      steps {
+        git branch: 'main', url: 'https://github.com/arunchintu-1/projectk.git'
+      }
+    }
 
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t backend:latest .'
+        sh '''
+          echo "Building Docker image..."
+          ls -l  # Optional: Show files
+          docker build -t backend:latest .
+        '''
       }
     }
 
     stage('Login to ECR') {
       steps {
         sh '''
+          echo "Logging into AWS ECR..."
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend
         '''
       }
@@ -33,7 +38,7 @@ pipeline {
     stage('Tag & Push to ECR') {
       steps {
         sh '''
-          docker tag latest backend:latest
+          echo "Pushing image to ECR..."
           docker push backend:latest
         '''
       }
@@ -42,13 +47,12 @@ pipeline {
     stage('Deploy to Kubernetes') {
       steps {
         sh '''
-          # Update kubeconfig for EKS (optional if already done in Jenkins node)
-          aws eks update-kubeconfig --region $AWS_REGION --name projectcluster
+          echo "Deploying to EKS cluster..."
+          aws eks update-kubeconfig --region us-east-1 --name projectcluster
 
-          # Replace image in the deployment file dynamically (optional)
-          sed -i "s|node:18|backend:latest|" ./backend/backend-deployment.yaml
+          # Replace image in deployment YAML (optional if already set)
+          sed -i "s|image:.*|image: backend:latest|" ./backend/backend-deployment.yaml
 
-          # Apply the deployment
           kubectl apply -f ./backend/backend-deployment.yaml
         '''
       }
