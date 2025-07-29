@@ -11,10 +11,10 @@ pipeline {
 
   stages {
     stage('Clone Repo') {
-      steps {
-        git 'https://github.com/arunchintu-1/projectk.git'
-      }
-    }
+     steps {
+       git branch: 'main', url: 'https://github.com/arunchintu-1/projectk.git'
+     }
+  }
 
     stage('Build Docker Image') {
       steps {
