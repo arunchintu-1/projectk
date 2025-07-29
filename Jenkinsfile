@@ -6,7 +6,7 @@ pipeline {
     ECR_REPO_NAME = 'backend'
     ECR_REGISTRY = '933768354046.dkr.ecr.us-east-1.amazonaws.com'
     IMAGE_TAG = 'latest'
-    FULL_IMAGE_NAME = "933768354046.dkr.ecr.us-east-1.amazonaws.com/backend:latest"
+    FULL_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPO_NAME}:${IMAGE_TAG}"
   }
 
   stages {
@@ -27,25 +27,22 @@ pipeline {
 
     stage('Login to ECR') {
       steps {
-        script {
-          withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-            sh '''
-              aws ecr get-login-password --region us-east-1 | \
-              docker login --username AWS --password-stdin <your-account-id>.dkr.ecr.us-east-1.amazonaws.com
-            '''
-           }
-          }
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+          sh '''
+            echo "Logging into AWS ECR..."
+            aws ecr get-login-password --region $AWS_REGION | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+          '''
         }
-      }       
+      }
+    }
 
     stage('Tag & Push to ECR') {
       steps {
         sh '''
-          echo "Tagging image..."
-          docker tag backend:latest 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend:latest
-
-          echo "Pushing image to ECR..."
-          docker push 933768354046.dkr.ecr.us-east-1.amazonaws.com/backend:latest
+          echo "Tagging and pushing Docker image to ECR..."
+          docker tag backend:latest $FULL_IMAGE_NAME
+          docker push $FULL_IMAGE_NAME
         '''
       }
     }
@@ -54,10 +51,10 @@ pipeline {
       steps {
         sh '''
           echo "Deploying to EKS cluster..."
-          aws eks update-kubeconfig --region us-east-1 --name projectcluster
+          aws eks update-kubeconfig --region $AWS_REGION --name projectcluster
 
-          # Optional: Update image in deployment.yaml dynamically
-          sed -i "s|image:.*|image: backend:latest|" ./fullstackapp/backend/backend-deployment.yaml
+          echo "Updating Kubernetes deployment with new image..."
+          sed -i "s|image:.*|image: $FULL_IMAGE_NAME|" ./fullstackapp/backend/backend-deployment.yaml
 
           kubectl apply -f ./fullstackapp/backend/backend-deployment.yaml
         '''
