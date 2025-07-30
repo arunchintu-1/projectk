@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  labels:
+    app: frontend
 spec:
   replicas: 2
   selector:
@@ -14,6 +16,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: arunyadavdev/frontend:latest  # ← replace with your DockerHub image
+          image: arunyadavdev/frontend:latest
           ports:
             - containerPort: 3000
